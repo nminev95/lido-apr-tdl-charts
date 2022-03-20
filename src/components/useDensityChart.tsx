@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-const margin = { top: 30, right: 80, bottom: 30, left: 80 },
+const margin = { top: 40, right: 50, bottom: 40, left: 50 },
   width = 960 - margin.left - margin.right,
-  height = 400 - margin.top - margin.bottom;
+  height = 500 - margin.top - margin.bottom;
 
 const useDensityChart = (data: any) => {
   const svgRef = useRef<d3.Selection<
@@ -88,7 +88,7 @@ const useDensityChart = (data: any) => {
     // visualize the data in x axis
     xAxisRef.current
       ?.attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(xAxis).ticks(10).tickSize(0));
+      .call(d3.axisBottom(xAxis).ticks(10).tickSize(0).tickPadding(15));
 
     // visualize the data in y axis
     yAxisRef.current?.call(
@@ -96,6 +96,7 @@ const useDensityChart = (data: any) => {
         .axisLeft(yAxis)
         .ticks(5)
         .tickSize(0)
+        .tickPadding(15)
         .tickFormat((d: any) => {
           let formattedNumber = d;
 
@@ -133,7 +134,16 @@ const useDensityChart = (data: any) => {
 
     const density = data.map((dataSet: any) => [dataSet.date, dataSet.value]);
 
-    const area = d3
+    const densityLine = d3
+      .line()
+      .x(function (d) {
+        return xAxis(d[0]);
+      })
+      .y(function (d) {
+        return yAxis(d[1]);
+      });
+
+    const densityArea = d3
       .area()
       .x(function (d) {
         return xAxis(d[0]);
@@ -142,16 +152,23 @@ const useDensityChart = (data: any) => {
       .y1(function (d) {
         return yAxis(d[1]);
       });
-    svgRef.current?.selectAll(".tick line").attr("stroke", "white");
+
     svgRef.current
       ?.append("path")
       .datum(density)
-      .attr("class", "area")
-      .attr("d", area)
-      .style("fill", "url(#density-area-gradient)");
-    // .attr("stroke-linecap", "round")
-    // .attr("stroke-width", "2")
-    // .attr("fill-opacity", "1");
+      .attr("class", "density-area")
+      .style("fill", "url(#density-area-gradient)")
+      .attr("d", densityArea);
+
+    svgRef.current
+      ?.append("path")
+      .datum(density)
+      .attr("stroke", "#D733FF")
+      .attr("stroke-width", "2")
+      .attr("fill", "none")
+      .attr("class", "density-line")
+      .attr("stroke-linecap", "round")
+      .attr("d", densityLine);
   }, [data]);
 };
 
