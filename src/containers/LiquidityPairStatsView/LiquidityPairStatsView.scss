@@ -1,0 +1,14 @@
+.liquidity-pair-stats-view {
+  padding: 80px;
+
+  .stats-header {
+    color: white;
+    font-size: 26px;
+    margin: 30px;
+  }
+
+  .charts-wrapper {
+    display: flex;
+    justify-content: space-evenly;
+  }
+}

@@ -1,14 +1,17 @@
 import "./DensityChart.scss";
-import useDensityChart from "./useDensityChart";
-import useGetTokenStats from "./useGetTokenStats";
+import useDensityChart from "../hooks/useDensityChart";
+import { ITokenStats } from "../models/models";
 
-const DensityChart = () => {
-  const tokenStats = useGetTokenStats();
-  console.log(tokenStats);
+type ComponentProps = {
+  data: ITokenStats[];
+  type: string;
+};
 
-  useDensityChart(tokenStats.tvlData);
+const DensityChart = (props: ComponentProps) => {
+  const { data, type } = props;
+  useDensityChart(data, type);
 
-  return <div className="density-chart-wrapper"></div>;
+  return <div className={`density-chart-wrapper-${type}`}></div>;
 };
 
 export default DensityChart;

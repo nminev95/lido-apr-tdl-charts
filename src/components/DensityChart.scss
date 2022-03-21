@@ -1,4 +1,5 @@
-.density-chart-wrapper {
+.density-chart-wrapper-APR,
+.density-chart-wrapper-TVL {
   width: fit-content;
   background: linear-gradient(111.6deg, #303659 -2.51%, #292e4d 104.46%);
   border-radius: 10px;
@@ -10,7 +11,7 @@
     }
     .tick {
       color: rgb(178, 189, 255);
-      font-size: 8px;
+      font-size: 10px;
 
       .gridline {
         stroke: #41486e;

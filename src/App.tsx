@@ -1,11 +1,11 @@
 import React from "react";
 import "./App.scss";
-import DensityChart from "./components/DensityChart";
+import LiquidityPairStatsView from "./containers/LiquidityPairStatsView/LiquidityPairStatsView";
 
 function App() {
   return (
     <div className="App">
-      <DensityChart />
+      <LiquidityPairStatsView />
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
+import { largeNumberFormatter, percentageFormatter } from "../helpers/helpers";
+import { ITokenStats } from "../models/models";
 
-const margin = { top: 40, right: 50, bottom: 40, left: 50 },
-  width = 960 - margin.left - margin.right,
-  height = 500 - margin.top - margin.bottom;
+const margin = { top: 50, right: 90, bottom: 50, left: 90 };
+const width = 960 - margin.left - margin.right;
+const height = 500 - margin.top - margin.bottom;
+const chartHeaderPadding = 15;
 
-const useDensityChart = (data: any) => {
+const useDensityChart = (data: ITokenStats[], type: string) => {
   const svgRef = useRef<d3.Selection<
     SVGGElement,
     any,
@@ -14,30 +17,32 @@ const useDensityChart = (data: any) => {
   > | null>(null);
   const yAxisRef = useRef<d3.Selection<
     SVGGElement,
-    any,
+    Number,
     HTMLElement,
     any
   > | null>(null);
   const xAxisRef = useRef<d3.Selection<
     SVGGElement,
-    any,
+    Date,
     HTMLElement,
     any
   > | null>(null);
-  console.log(data);
-  const yAxisMaxValue: number = Math.max(
-    ...data?.map(({ value }: any) => value)
-  );
-  const yAxisMinValue: number = Math.min(
-    ...data?.map(({ value }: any) => value)
-  );
-  const dates = data?.map(({ date }: any) => date);
-  const xAxisMinValue = Math.min(...dates);
-  const xAxisMaxValue = Math.max(...dates);
+
+  // map values in array
+  const values = data?.map(({ value }) => value);
+  // map dates in array
+  const dates = data?.map(({ date }) => date);
+  // create density array
+  const density = data.map(({ date, value }) => [date, value]);
+
+  const yAxisMaxValue: number = Math.max(...values);
+  const yAxisMinValue: number = Math.min(...values);
+  const xAxisMinValue = Math.min(...(dates as any));
+  const xAxisMaxValue = Math.max(...(dates as any));
 
   useEffect(() => {
     svgRef.current = d3
-      .select(".density-chart-wrapper")
+      .select(`.density-chart-wrapper-${type}`)
       .append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
@@ -49,6 +54,16 @@ const useDensityChart = (data: any) => {
   }, []);
 
   useEffect(() => {
+    // append chart header
+    svgRef.current
+      ?.append("text")
+      .text(`Asset ${type}`)
+      .attr("x", (width - margin.left - margin.right) / 2)
+      .attr("y", -chartHeaderPadding)
+      .attr("fill", "white")
+      .style("font-weight", "bold")
+      .style("letter-spacing", "1px");
+
     // create gradient for fill
     const gradient = svgRef.current
       ?.append("defs")
@@ -63,14 +78,14 @@ const useDensityChart = (data: any) => {
     gradient
       ?.append("stop")
       .attr("offset", "0%")
-      .style("stop-color", "#DC4DFF") //end in red
+      .style("stop-color", "#DC4DFF")
       .style("stop-opacity", 0.1);
 
     // add second color
     gradient
       ?.append("stop")
       .attr("offset", "100%")
-      .style("stop-color", "#4DBFFF") //start in blue
+      .style("stop-color", "#4DBFFF")
       .style("stop-opacity", 0.3);
 
     // add the xAxis
@@ -86,9 +101,17 @@ const useDensityChart = (data: any) => {
       .range([height, 0]);
 
     // visualize the data in x axis
-    xAxisRef.current
-      ?.attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(xAxis).ticks(10).tickSize(0).tickPadding(15));
+    xAxisRef.current?.attr("transform", "translate(0," + height + ")").call(
+      d3
+        .axisBottom(xAxis)
+        .ticks(10)
+        .tickSize(0)
+        .tickPadding(15)
+        .tickFormat((d) => {
+          const timeFormatter = d3.timeFormat("%b %d");
+          return timeFormatter(d as Date);
+        })
+    );
 
     // visualize the data in y axis
     yAxisRef.current?.call(
@@ -97,20 +120,11 @@ const useDensityChart = (data: any) => {
         .ticks(5)
         .tickSize(0)
         .tickPadding(15)
-        .tickFormat((d: any) => {
-          let formattedNumber = d;
-
-          if (d / 1000000 >= 1) {
-            formattedNumber = d / 1000000 + "M";
+        .tickFormat((d) => {
+          if (type === "TVL") {
+            return largeNumberFormatter(d as number);
           }
-          if (d / 1000000000 >= 1) {
-            formattedNumber = d / 1000000000 + "B";
-          }
-          if (d / 1000000000000 >= 1) {
-            formattedNumber = d / 1000000000000 + "T";
-          }
-
-          return formattedNumber;
+          return percentageFormatter(d as number);
         })
     );
 
@@ -132,8 +146,7 @@ const useDensityChart = (data: any) => {
       .attr("x2", 0)
       .attr("y2", 0);
 
-    const density = data.map((dataSet: any) => [dataSet.date, dataSet.value]);
-
+    // create the density line
     const densityLine = d3
       .line()
       .x(function (d) {
@@ -143,23 +156,26 @@ const useDensityChart = (data: any) => {
         return yAxis(d[1]);
       });
 
+    // create the density area
     const densityArea = d3
       .area()
-      .x(function (d) {
+      .x((d) => {
         return xAxis(d[0]);
       })
       .y0(height)
-      .y1(function (d) {
+      .y1((d) => {
         return yAxis(d[1]);
       });
 
+    // append density area
     svgRef.current
       ?.append("path")
       .datum(density)
       .attr("class", "density-area")
       .style("fill", "url(#density-area-gradient)")
-      .attr("d", densityArea);
+      .attr("d", densityArea as any);
 
+    // append density line
     svgRef.current
       ?.append("path")
       .datum(density)
@@ -168,7 +184,7 @@ const useDensityChart = (data: any) => {
       .attr("fill", "none")
       .attr("class", "density-line")
       .attr("stroke-linecap", "round")
-      .attr("d", densityLine);
+      .attr("d", densityLine as any);
   }, [data]);
 };
 
